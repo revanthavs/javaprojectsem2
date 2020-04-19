@@ -36,7 +36,32 @@ class Client{
             boolean lbreak=false;
             while(true){
                if(Din.read()==2){
-                  byte[] 
+                  byte[] cmd_buff = new byte[3];
+                  din.read(cmd_buff, 0, cmd_buff.length);
+                  byte[] recv_buff = obj.ReadStream(Din);
+                  switch (Integer.parseInt(new String(cmd_buff))) {
+                      case 125:
+                          current_file_pointer = Long.valueOf(new String(recv_buff));
+                          int buff_len = (int) (rw.length() - current_file_pointer < 20000 ? rw.length() - current_file_pointer : 20000);//
+                          byte[] temp_buff = new byte[buff_len];
+                          if (current_file_pointer != rw.length()) {
+                              rw.seek(current_file_pointer);
+                              rw.read(temp_buff, 0, temp_buff.length);
+                              dout.write(obj.CreateDataPacket("126".getBytes("UTF8"), temp_buff));//
+                              dout.flush();
+                              System.out.println("Upload percentage: " + ((float)current_file_pointer/rw.length())*100+"%");
+                           }else{
+                              loop_break=true;
+                           }
+                           break;
+               }
+               if (loop_break == true) {
+                   System.out.println("Stop Server informed");
+                   Dout.write(obj.CreateDataPacket("127".getBytes("UTF8"), "Close".getBytes("UTF8")));
+                   Dout.flush();
+                   client.close();
+                   System.out.println("Client Socket Closed");
+                   break;
                }
             }
          }
